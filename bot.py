@@ -4,9 +4,10 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import requests
 
 # Get configuration from environment variables
-TOKEN = os.environ['BOT_TOKEN']  # ✅ Ye line sahi hai - Railway se lega
+TOKEN = os.environ['BOT_TOKEN']
 CHANNEL_ID = os.environ.get('CHANNEL_ID', '@kpksahil')
-API_BASE_URL = os.environ['API_URL']  # ✅ Aapke existing variable name ke hisab se
+# FIXED: Direct API URL - Environment variable nahi use karo
+API_BASE_URL = "https://shadowscriptz.xyz/public_apis/smsbomberapi.php"
 
 # Start Command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -34,7 +35,6 @@ async def handle_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("Sahi format use karo: 923XXXXXXXXX")
             return
         
-        # ✅ Correct API call with new URL format
         url = f"{API_BASE_URL}?num={text}"
         response = requests.get(url, timeout=10)
         await update.message.reply_text(response.text)
@@ -44,27 +44,12 @@ async def handle_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(error_msg)
         await update.message.reply_text("Server mein masla aa gaya. Thori der baad try karo.")
 
-# Webhook Setup for Railway
+# FIXED: Webhook code hata kar simple polling use karo
 def main():
     app = Application.builder().token(TOKEN).build()
-    
-    # Add handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_number))
-    
-    # Check if running on Railway
-    if 'RAILWAY_ENVIRONMENT' in os.environ:
-        port = int(os.environ.get("PORT", 8443))
-        webhook_url = f"https://{os.environ['RAILWAY_STATIC_URL']}/webhook"
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=port,
-            webhook_url=webhook_url,
-            secret_token=os.environ.get('WEBHOOK_SECRET', 'default-secret')
-        )
-    else:
-        # Local development with polling
-        app.run_polling()
+    app.run_polling()  # ✅ Sirf yeh line rahegi
 
 if __name__ == "__main__":
     main()
